@@ -1,0 +1,10 @@
+threads: 16
+barcoded: 1
+DRS: 0
+metadata: /home/stefan/metadata_Hela_Hek293T.txt
+general_folder: /home/stefan/GiantDisk/23_03_23_HEK_HeLa_Test/
+genome_fasta: /home/stefan/BigDisk/Work/Gerber_AG/Homo_sapiens.GRCh38.dna.primary_assembly.fa
+transcriptome_fasta: /home/stefan/BigDisk/Work/Gerber_AG/gencode.v40.transcripts.fa
+genome_gtf: /home/stefan/BigDisk/Work/Gerber_AG/gencode.v40.primary_assembly.annotation.gtf
+bed_file: /home/stefan/BigDisk/Work/Gerber_AG/hg38_GENCODE.v38.bed
+run_dir: /home/stefan/GiantDisk/run_dir_HEK_Hela2/
