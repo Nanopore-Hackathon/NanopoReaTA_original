@@ -16,7 +16,7 @@ RUN apt-get update
 RUN apt-get clean
 RUN rm -rf /var/lib/apt/lists/*
 
-# Install Human reference
+#Install Human reference
 RUN mkdir Human_reference_data
 RUN wget https://sourceforge.net/projects/rseqc/files/BED/Human_Homo_sapiens/hg38_GENCODE_V42_Comprehensive.bed.gz/download -O hg38_GENCODE_V42_Comprehensive.bed.gz
 RUN gunzip hg38_GENCODE_V42_Comprehensive.bed.gz
@@ -86,9 +86,11 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
 # Put conda in path so we can use conda activate
 ENV PATH=$CONDA_DIR/bin:$PATH
 
-RUN wget https://github.com/AnWiercze/NanopoReaTA/archive/refs/heads/master.zip
+RUN wget https://github.com/Nanopore-Hackathon/NanopoReaTA/archive/refs/heads/main.zip
 
-RUN unzip master.zip
+RUN unzip main.zip
+
+RUN mv ./NanopoReaTA-main ./NanopoReaTA-master
 
 WORKDIR ./NanopoReaTA-master/app/
 
