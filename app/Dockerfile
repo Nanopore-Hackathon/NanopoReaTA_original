@@ -108,6 +108,6 @@ EXPOSE 8080
 ENV SHINY_LOG_STDERR=1
 
 
-ENTRYPOINT ["conda","run", "--no-capture-output","-n","nanoporeata", "Rscript", "app_docker.R"]
+#ENTRYPOINT ["conda","run", "--no-capture-output","-n","nanoporeata", "Rscript", "app_docker.R"]
 
 
