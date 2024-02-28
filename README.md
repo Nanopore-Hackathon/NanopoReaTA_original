@@ -32,6 +32,14 @@ Min. number of samples per condition | 2
 ## Installation using docker [2]
 *NOTE: All paths selected by NanopoReaTA should not contain any spaces in their names. Paths should always be named with underscores "_" instead of spaces " ". (e.g "Linux data" -> "Linux_data")*
 
+#### Installation for developers (NanopoReaTA will not start automatically, but you will be able to change the underlying code and test)
+```
+sudo apt-get install -y docker.io
+cd /path/to/NanopoReaTA/app
+sudo docker build -t stegiopast/nanoporeata:references ./
+```
+
+
 #### Installation on Linux based systems
 
 1. Open a bash shell Ctrl + Alt + T. 
