@@ -34,6 +34,7 @@ Min. number of samples per condition | 2
 
 #### Installation for developers (NanopoReaTA will not start automatically, but you will be able to change the underlying code and test)
 ```
+git clone https://github.com/Nanopore-Hackathon/NanopoReaTA.git
 sudo apt-get install -y docker.io
 cd /path/to/NanopoReaTA/app
 sudo docker build -t stegiopast/nanoporeata:references ./
