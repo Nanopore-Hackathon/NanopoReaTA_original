@@ -22,10 +22,10 @@ options(shiny.maxRequestSize = 30*1024^2)
 # ______________________________________________________________________________
 # FUNCTIONS ####
 ## DEA ####
-source("server/R_scripts/dea_function.R", local = TRUE)
+source("server/R_scripts/new_dea_function.R", local = TRUE)
 
 ## DTE ####
-source("server/R_scripts/dte_function.R", local = TRUE)
+source("server/R_scripts/new_dte_function.R", local = TRUE)
 
 ## DTU #### 
 source("server/R_scripts/dtu_function.R", local = TRUE)
