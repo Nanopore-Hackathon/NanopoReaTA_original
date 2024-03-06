@@ -12,5 +12,8 @@ options = opt_parser.parse_args()
 """Convert GTF file into csv format"""
 input_file = options.input_file
 df = gtf_parse.read_gtf(input_file)
+
+df = df[['gene_id', 'gene_name', 'transcript_id', 'transcript_name']]
+
 output_file = options.output_file
 pd.DataFrame.to_csv(df,output_file)
