@@ -7,25 +7,11 @@ options(warn=-1)
 safe_colorblind_palette <- c("#88CCEE", "#CC6677", "#DDCC77", "#117733", "#332288", "#AA4499", 
                              "#44AA99", "#999933", "#882255", "#661100", "#6699CC", "#888888")
 
-createDDS2_DTE <- function(counts, metadata, first.level, ref.level){
-  flog.info("########## Create DDS object ###########")
-
-  dds <- DESeqDataSetFromMatrix(countData = counts,
-                                colData = metadata,
-                                design = ~ conditions)
-  
-  
-  dds$conditions = factor(dds$conditions, levels = c(first.level, ref.level))
-  
-  dds <- DESeq(dds, parallel = T)
-
-  return(dds)
-}
 
 createRES_DTE <- function(dds, first.level, ref.level, pvalue, gtf_file){
   flog.info("########## Create results object ###########")
 
-  res <- results(dds, contrast = c("conditions", first.level, ref.level), alpha = pvalue, parallel = T)
+  res <- results(dds, contrast = c("Conditions", first.level, ref.level), alpha = pvalue, parallel = T)
   res_df <- as.data.frame(res)
   res_df <- na.omit(res_df)
   res_df <- res_df[order(res_df$padj, res_df$pvalue, decreasing = F),]
@@ -47,11 +33,11 @@ createPCA_DTE<- function(rld, first.level, ref.level, condi_col){
   flog.info("########## Create PCA plot ###########")
 
   rldObject = rld
-  pcaData <- plotPCA(rldObject, intgroup="conditions", returnData=TRUE)
+  pcaData <- plotPCA(rldObject, intgroup="Conditions", returnData=TRUE)
   
   percentVar <- round(100 * attr(pcaData, "percentVar"))
 
-  pca_plot = ggplot(pcaData, aes(PC1, PC2, color=conditions, label=name)) +
+  pca_plot = ggplot(pcaData, aes(PC1, PC2, color=Conditions, label=name)) +
     scale_color_manual(values = condi_col) +
     geom_point(size=5) +
     ggtitle("PCA plot") +
@@ -102,7 +88,7 @@ createVolcano_DTE <- function(res_df, condi_col){
     #scale_color_manual(values = colorCode) +
     geom_point(size=1.75) +
     xlab("log2 fold change") + ylab("-log10 p-adjusted")+
-    ggtitle(paste0("Differential Expression (", names(condi_col)[1], " vs. ", names(condi_col)[2], ")")) + # add conditions to title
+    ggtitle(paste0("Differential Expression (", names(condi_col)[1], " vs. ", names(condi_col)[2], ")")) + # add Conditions to title
     scale_color_manual(values = color_code) +
     theme_bw() +
     guides(colour = guide_legend(override.aes = list(size=5))) +
@@ -131,13 +117,13 @@ createHeatmap_DTE <- function(dds, rld, condi_col, main_color = "RdBu", gtf_file
   flog.info("########## Create Heatmap of Expression ###########")
 
   print("Heatmap will be created...")
-  colList = list("conditions" = condi_col)
+  colList = list("Conditions" = condi_col)
   select <- transcripts[, "gencode"]
-  df <- as.data.frame(colData(dds)["conditions"])
+  df <- as.data.frame(colData(dds)["Conditions"])
   heat_input = assay(rld)[select,]
   row.names(heat_input) = transcripts[, "names"]
 
-  ha = HeatmapAnnotation(Condition = df$conditions,
+  ha = HeatmapAnnotation(Condition = df$Conditions,
                         col = list(Condition = condi_col),
                         name = "Condition   ",
                         show_annotation_name = F,
@@ -174,7 +160,7 @@ createHeatmap_DTE <- function(dds, rld, condi_col, main_color = "RdBu", gtf_file
   )
   g_draw = draw(g, background = "transparent")
 
-  ha2 = HeatmapAnnotation(Condition = df$conditions,
+  ha2 = HeatmapAnnotation(Condition = df$Conditions,
                          col = list(Condition = condi_col),
                          name = "Condition   ",
                          show_annotation_name = F,
@@ -220,7 +206,7 @@ createSam2Sam_DTE <- function(rld){
 
   sampleDists <- dist(t(assay(rld)))
   sampleDistMatrix <- as.matrix(sampleDists)
-  rownames(sampleDistMatrix) <- paste(rld$conditions, rld$Samples, sep="-")
+  rownames(sampleDistMatrix) <- paste(rld$Conditions, rld$Samples, sep="-")
   colnames(sampleDistMatrix) <- NULL
   colors <- colorRampPalette( rev(brewer.pal(9, "Blues")))(255)
 
@@ -271,53 +257,19 @@ createSam2Sam_DTE <- function(rld){
   return(list(g_draw, g_draw2))
 }
 
-run_preprocessing_dte <- function(meta.file, counts.file, condition.col, first.level, ref.level, pvalue, gtf_file){
+run_preprocessing_dte <- function(dds, rld, condition.col, first.level, ref.level, pvalue, gtf_file){
+  # removed meta.file, counts.file
   flog.info("########## Differential Expression Analysis ###########")
-  counts = counts.file
   
-  metadata = meta.file
-  row.names(metadata) <- metadata$Samples
-  
-  missingSampleInfos = colnames(counts)[-which(colnames(counts) %in% metadata$Samples)]
-  if (length(missingSampleInfos) > 0){
-    print(paste0("No metadata found for the following samples: ", paste(missingSampleInfos, collapse = ",")))
-    print(paste0(">>>>> Counts will be excluded!"))
-    
-  } else {
-    print("All required information is included!")
-  }
-  metadata = metadata[which(row.names(metadata) %in% colnames(counts)),]
-  
-  colnames(metadata)[colnames(metadata) == condition.col] = "conditions"
-  
-  if (is.na(first.level) & is.na(ref.level)){
-    first.level = unique(metadata$conditions)[1]
-    ref.level = unique(metadata$conditions)[2]
-    
-  } else if (is.na(first.level)){
-    first.level = unique(metadata$conditions[!(metadata$conditions == ref.level)])[1]
-  } else {
-    ref.level = unique(metadata$conditions[!(metadata$conditions == first.level)])[1]
-  }
-  print(metadata)
-  print(c(first.level, ref.level))
-  metadata = metadata[which(metadata$conditions %in% c(first.level, ref.level)),]
-  metadata = metadata[which(row.names(metadata) %in% intersect(row.names(metadata), colnames(counts))),]
-  
-  counts = counts[, match(row.names(metadata), colnames(counts))]
-  
-  dds = createDDS2_DTE(counts, metadata, first.level, ref.level)
-  rld = rlog(dds)
   res_df = createRES_DTE(dds, first.level, ref.level, pvalue, gtf_file)
   print(head(res_df))
   
   deaProcess = list(res_df = res_df, 
                     rld = rld, 
-                    dds = dds, 
-                    counts = counts, 
-                    metadata = metadata, 
+                    dds = dds,
                     first.level = first.level, 
                     ref.level = ref.level)
+  return(deaProcess)
   
 }
 

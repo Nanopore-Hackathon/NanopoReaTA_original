@@ -48,7 +48,7 @@ createLengthPlots <- function(readLengths_df_filt, metadata, conditionCol, condi
                          axis.ticks = element_line(color = "white"))
   
   # Plot group-wise distribution of all reads
-  groupWise_All = ggplot(readLengths_df_filt, aes(x = Length, color = Condition)) +
+  groupWise_All = ggplot(readLengths_df_filt, aes(x = Length, color = Conditions)) +
     scale_color_manual(values=color_conditions) + 
     geom_density() +
     scale_x_continuous(labels=scales::comma) +
@@ -121,7 +121,7 @@ groupwise_read_length.download <- function(readLengths_df_filt, metadata, condit
     left_join(metadata, by = c("Sample" = "Samples"))
   
   # Plot group-wise distribution of all reads
-  groupWise_All = ggplot(readLengths_df_filt, aes(x = Length, color = Condition)) +
+  groupWise_All = ggplot(readLengths_df_filt, aes(x = Length, color = Conditions)) +
     scale_color_manual(values=color_conditions) + 
     geom_density() +
     scale_x_continuous(labels=scales::comma) +

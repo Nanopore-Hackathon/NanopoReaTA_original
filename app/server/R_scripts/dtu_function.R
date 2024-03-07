@@ -1,125 +1,52 @@
 
 
-DRIM_seq_prep <- function(table = count.table, run.dir = csv.dir, samps = metadata, condition_col = "Condition", first.level = "a2d3-OE", ref.level = "Ctrl", gtf_file = gtf,cores = 4){
-      
-    ###############################################################################################
-    #                                                                                             #
-    #                                                                                             #
-    #                                                                                             #
-    #                             Read count file, gtf and metadata                               #
-    #                                                                                             #
-    #                                                                                             #
-    #                                                                                             #
-    #                                                                                             #
-    ###############################################################################################
-    
-    txdb.filename <- str_split(gtf_file, "/")
-    txdb.filename <- as.vector(txdb.filename[[1]])[length(txdb.filename[[1]])]
-    txdb.filename <- paste0(run.dir,txdb.filename)
-    samps["sample_id"] = samps$Samples
-    samps["condition"] = samps[condition_col]
-
-    
-    samps <- samps[which(samps$condition %in% c(first.level,ref.level)),]
-    print(samps)
-      
-    head(table)
-    table = table[,which(colnames(table) %in% samps$Samples)]
-
-    
-    out <- tryCatch(
-      {txdb <- loadDb(txdb.filename)
-      x = T
+DRIM_seq_prep <- function(d, condition_col = "Condition", first.level = "a2d3-OE", ref.level = "Ctrl", cores = 4){
+  
+  ###############################################################################################
+  #                                                                                             #
+  #                                                                                             #
+  #                                                                                             #
+  #                             Read count file, gtf and metadata                               #
+  #                                                                                             #
+  #                                                                                             #
+  #                                                                                             #
+  #                                                                                             #
+  ###############################################################################################
+  
+  input_design <- DRIMSeq::samples(d)
+  
+  input_design$Condition <- factor(input_design$Condition,levels = c(first.level,ref.level))
+  #print(input_design)
+  design_full <- model.matrix(~Condition, data=input_design)
+  #print(design_full)
+  #print(colnames(design_full)[2])
+  set.seed(1)
+  
+  system.time({
+    out3 <- tryCatch(
+      {d <- dmPrecision(d, design=design_full, BPPARAM = param)
+      d <- dmFit(d, design=design_full, BPPARAM = param)
+      d <- dmTest(d, coef=colnames(design_full)[2], BPPARAM = param)
+      x = F
       },
       error = function(e){
-        x = F
+        x = T
       },
       finally = {
       })
-    
-    
-    if (out){
-      txdb <- loadDb(txdb.filename)
-    }
-    else {
-      txdb <- makeTxDbFromGFF(gtf_file)
-      saveDb(txdb, txdb.filename)
-    }
-    
-    txdf <- AnnotationDbi::select(txdb, keys(txdb, "GENEID"),"TXNAME", "GENEID")
-    tab <- table(txdf$GENEID)
-    txdf$ntx <- tab[match(txdf$GENEID, names(tab))]
-    
-    
-    all(rownames(table) %in% txdf$TXNAME)
-    txdf <- txdf[match(rownames(table),txdf$TXNAME),]
-    all(rownames(table) == txdf$TXNAME)
-    
-    counts <- data.frame(gene_id=txdf$GENEID,
-                         feature_id=txdf$TXNAME,
-                         table)    
-  
-  param = BiocParallel::SerialParam()
-  d <- dmDSdata(counts=counts, samples=samps)
-  n <- length(samps$sample_id)
-  n.small <- min(table(samps$condition))
-  out2 <- tryCatch(
-                   {d <- dmFilter(d,
-                        min_samps_feature_expr=as.integer(n.small), min_feature_expr=5,
-                        min_samps_gene_expr=(n.small), min_gene_expr=20)
-                        x = F
-                        },
-                   error = function(e){
-                        x = T
-                   },
-                   finally = {
-                   })
-  if (out2){
-  flog.info("########## DrimSeq Filtering failed ###########")
-  flog.info("Either only one splicing variant for every gene in dataset or it must be sequenced deeper")
-  return(NULL)
-  }
-
-  table(table(counts(d)$gene_id))
-  input_design <- DRIMSeq::samples(d)
-  input_design$condition <- factor(input_design$condition,levels = c(first.level,ref.level))
-  print(input_design)
-  design_full <- model.matrix(~condition, data=input_design)
-  print(design_full)
-  print(colnames(design_full)[2])
-  set.seed(1)
-
-  system.time({
-    out3 <- tryCatch(
-            {d <- dmPrecision(d, design=design_full, BPPARAM = param)
-            d <- dmFit(d, design=design_full, BPPARAM = param)
-            d <- dmTest(d, coef=colnames(design_full)[2], BPPARAM = param)
-            x = F
-            },
-            error = function(e){
-            x = T
-            },
-            finally = {
-            })
   })
-
+  
   if (out3){
-  flog.info("########## DrimSeq Filtering failed ###########")
-  flog.info("There was no dispersion between transcripts detected")
-  return(NULL)
+    flog.info("########## DrimSeq Filtering failed ###########")
+    flog.info("There was no dispersion between transcripts detected")
+    return(NULL)
   }
-    
+  
   res_txp <- DRIMSeq::results(d, level="feature")
-
+  
   print("DRIM SEQ DONE")
-
-  list = list()
-  list$counts = counts
-  list$drim = d
-  list$samps = samps
-  list$txdf = txdf
-  list$res_df = res_txp 
-  return(list)
+  
+  return(list(d, res_txp))
 }
 
 
@@ -135,69 +62,66 @@ DRIM_seq_prep <- function(table = count.table, run.dir = csv.dir, samps = metada
 ###############################################################################################
 
 
-DTU_special <- function(d_list = tryout, condition_col = "Condition", first.level = "a2d3-OE", ref.level = "Ctrl", goi_id = "ENSG00000111640.15",gtf_tab = gtf_table, cores = 4, pvalue_input = 0.05){
-    
-    d = d_list$drim
-    counts = d_list$counts
-    samps = d_list$samps
-    
-    res <- DRIMSeq::results(d)
-    head(res)
-    
-    res.txp <- DRIMSeq::results(d, level="feature")
-    head(res.txp)
-    
-    no.na <- function(x) ifelse(is.na(x), 1, x)
-    res$pvalue <- no.na(res$pvalue)
-    res.txp$pvalue <- no.na(res.txp$pvalue)
-    
-    pScreen <- res$pvalue
-    strp <- function(x) substr(x,1,15)
-    names(pScreen) <- strp(res$gene_id)
-    pConfirmation <- matrix(res.txp$pvalue, ncol=1)
-    rownames(pConfirmation) <- strp(res.txp$feature_id)
-    
-    tx2gene <- res.txp[,c("feature_id", "gene_id")]
-    for (i in 1:2) tx2gene[,i] <- strp(tx2gene[,i])
-    goi_df = res.txp[which(res.txp$gene_id == goi_id),]
-    goi_df_merged = merge(goi_df,counts(d), by = "feature_id")
-    idx <- which(res$gene_id == goi_id)
-    selected_d = counts(d)[which(counts(d)$gene_id == res$gene_id[idx]),]
-    samples = samps$sample_id
-    feature_ids = unique(selected_d$feature_id)
-    plot_dataframe_d = data.frame()
-    sum_df = data.frame(sample = as.character(), sum = as.numeric())
-    for (i in samples){
-      sum = sum(selected_d[i])
-      temp_sum = cbind(i,sum)
-      colnames(temp_sum) = c("sample", "sum")
-      sum_df = rbind(sum_df,temp_sum)
-    }
-    print(sum_df)
-    for (i in samples){
-      for (j in feature_ids){
-        counts_df = as.numeric(selected_d[which(selected_d$feature_id == j),i])
-        feature_id = j
-        sample_name = i
-        sum_column = as.numeric(sum_df[which(sum_df$sample == i),"sum"])
-        percentage = as.numeric(counts_df / sum_column)
-        Condition = as.character(samps[which(samps$Samples == i), "Condition"])
-        temp_df = cbind(feature_id,counts_df, sample_name, Condition, sum_column, percentage)
-        plot_dataframe_d = rbind(plot_dataframe_d,temp_df)
-      }
-      
-      
-    }
-    plot_dataframe_d$counts_df = as.numeric(plot_dataframe_d$counts_df)
-    plot_dataframe_d$percentage = as.numeric(plot_dataframe_d$percentage)
-    plot_dataframe_d$Significance = res.txp[which(res.txp$gene_id == goi_id),]$adj_pvalue < pvalue_input
-    plot_dataframe_d$Significance[is.na(plot_dataframe_d$Significance)] <- FALSE
-    goi_name = unique(gtf_tab$gene_name[gtf_tab$gene_id == goi_id])
-    print(goi_name)
-    #plot_dataframe_d  
+DTU_special <- function(d_list, condition_col = "Condition", first.level = "a2d3-OE", ref.level = "Ctrl", goi_id = "ENSG00000111640.15",gtf_tab = gtf_table, cores = 4, pvalue_input = 0.05){
+  d = d_list$drim
   
-    if(dim(plot_dataframe_d)[1] > 0){
-      
+  res <- DRIMSeq::results(d)
+  head(res)
+  
+  res.txp <- DRIMSeq::results(d, level="feature")
+  head(res.txp)
+  
+  no.na <- function(x) ifelse(is.na(x), 1, x)
+  res$pvalue <- no.na(res$pvalue)
+  res.txp$pvalue <- no.na(res.txp$pvalue)
+  
+  pScreen <- res$pvalue
+  strp <- function(x) substr(x,1,15)
+  names(pScreen) <- strp(res$gene_id)
+  pConfirmation <- matrix(res.txp$pvalue, ncol=1)
+  rownames(pConfirmation) <- strp(res.txp$feature_id)
+  
+  tx2gene <- res.txp[,c("feature_id", "gene_id")]
+  for (i in 1:2) tx2gene[,i] <- strp(tx2gene[,i])
+  goi_df = res.txp[which(res.txp$gene_id == goi_id),]
+  goi_df_merged = merge(goi_df,counts(d), by = "feature_id")
+  idx <- which(res$gene_id == goi_id)
+  selected_d = counts(d)[which(counts(d)$gene_id == res$gene_id[idx]),]
+  samples = samps$sample_id
+  feature_ids = unique(selected_d$feature_id)
+  plot_dataframe_d = data.frame()
+  sum_df = data.frame(sample = as.character(), sum = as.numeric())
+  for (i in samples){
+    sum = sum(selected_d[i])
+    temp_sum = cbind(i,sum)
+    colnames(temp_sum) = c("sample", "sum")
+    sum_df = rbind(sum_df,temp_sum)
+  }
+  print(sum_df)
+  for (i in samples){
+    for (j in feature_ids){
+      counts_df = as.numeric(selected_d[which(selected_d$feature_id == j),i])
+      feature_id = j
+      sample_name = i
+      sum_column = as.numeric(sum_df[which(sum_df$sample == i),"sum"])
+      percentage = as.numeric(counts_df / sum_column)
+      Condition = as.character(samps[which(samps$Samples == i), "Condition"])
+      temp_df = cbind(feature_id,counts_df, sample_name, Condition, sum_column, percentage)
+      plot_dataframe_d = rbind(plot_dataframe_d,temp_df)
+    }
+    
+    
+  }
+  plot_dataframe_d$counts_df = as.numeric(plot_dataframe_d$counts_df)
+  plot_dataframe_d$percentage = as.numeric(plot_dataframe_d$percentage)
+  plot_dataframe_d$Significance = res.txp[which(res.txp$gene_id == goi_id),]$adj_pvalue < pvalue_input
+  plot_dataframe_d$Significance[is.na(plot_dataframe_d$Significance)] <- FALSE
+  goi_name = unique(gtf_tab$gene_name[gtf_tab$gene_id == goi_id])
+  print(goi_name)
+  #plot_dataframe_d  
+  
+  if(dim(plot_dataframe_d)[1] > 0){
+    
     # get coordinates to draw significance bars
     sig_bar_coord = data.frame(id = unique(plot_dataframe_d$feature_id)) # create a new dataframe containing the unique IDs from plot_dataframe_d (in the same order as they occur in the ordiginal data)
     sig_bar_coord$y = apply(sig_bar_coord, MARGIN = 1, FUN = function(row) max(plot_dataframe_d[plot_dataframe_d$feature_id == row, "percentage"]) + 0.03) # for each ID get the maximum percentage value and add 0.01 => y value for the significance bars
@@ -206,38 +130,38 @@ DTU_special <- function(d_list = tryout, condition_col = "Condition", first.leve
     sig_bar_coord$x_2 = sig_bar_coord$x_center + 0.25 # end position of the line 
     sig_bar_coord$significant = apply(sig_bar_coord, MARGIN = 1, FUN = function(row) plot_dataframe_d[plot_dataframe_d$feature_id == row["id"], "Significance"][1]) # for each ID extract the corresponding significane value (TRUE/FALSE) 
     sig_bar_coord = sig_bar_coord[sig_bar_coord$significant == TRUE,] # keep only significant IDs; the x and y values are used to draw the line below
-      
+    
     bp <- ggboxplot(plot_dataframe_d, "feature_id", "percentage",
-                  color = "Condition", add = "jitter", add.params = list(size = 3, alpha = 1)) + # removed:
-    color_palette(palette = "jco")+
-    xlab("Feature ID") +
-    ylab("Transcript expression (%)") +
-    ggtitle(goi_name) +
-    scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
-    geom_segment(data = sig_bar_coord, aes(x = x_1, y = y, xend = x_2, yend = y), color = "indianred3") + # draw significance bars
-    geom_text(data = sig_bar_coord, aes(x = x_center, y = y+0.02), label = "sign.", color = "indianred3") + # add "sign." label anove each bar
-    theme(
-      panel.background = element_rect(fill = "transparent"), # bg of the panel
-      plot.background = element_rect(fill = "transparent", color = NA), # bg of the plot
-      panel.grid.major = element_blank(), # get rid of major grid
-      panel.grid.minor = element_blank(), # get rid of minor grid
-      legend.background = element_rect(fill = "transparent"), # get rid of legend bg
-      #legend.box.background = element_rect(fill = "transparent"), # get rid of legend panel bg
-      legend.title = element_text(size = 20, color = "white"),
-      legend.key = element_rect(colour = "transparent", fill = "transparent"),
-      legend.text = element_text("Condition", size = 8, color = "white"),
-      axis.line = element_line(color = "white"),
-      axis.text = element_text(angle = 45, hjust = 1, size = 10, color = "white"),
-      plot.title = element_text(hjust = 0.5, face = "bold", size = 14, color = "white"),
-      axis.title = element_text(size = 14, color = "white")
+                    color = "Condition", add = "jitter", add.params = list(size = 3, alpha = 1)) + # removed:
+      color_palette(palette = "jco")+
+      xlab("Feature ID") +
+      ylab("Transcript expression (%)") +
+      ggtitle(goi_name) +
+      scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+      geom_segment(data = sig_bar_coord, aes(x = x_1, y = y, xend = x_2, yend = y), color = "indianred3") + # draw significance bars
+      geom_text(data = sig_bar_coord, aes(x = x_center, y = y+0.02), label = "sign.", color = "indianred3") + # add "sign." label anove each bar
+      theme(
+        panel.background = element_rect(fill = "transparent"), # bg of the panel
+        plot.background = element_rect(fill = "transparent", color = NA), # bg of the plot
+        panel.grid.major = element_blank(), # get rid of major grid
+        panel.grid.minor = element_blank(), # get rid of minor grid
+        legend.background = element_rect(fill = "transparent"), # get rid of legend bg
+        #legend.box.background = element_rect(fill = "transparent"), # get rid of legend panel bg
+        legend.title = element_text(size = 20, color = "white"),
+        legend.key = element_rect(colour = "transparent", fill = "transparent"),
+        legend.text = element_text("Condition", size = 8, color = "white"),
+        axis.line = element_line(color = "white"),
+        axis.text = element_text(angle = 45, hjust = 1, size = 10, color = "white"),
+        plot.title = element_text(hjust = 0.5, face = "bold", size = 14, color = "white"),
+        axis.title = element_text(size = 14, color = "white")
       )
-  
-  bp <- ggpar(bp,legend = "right",
-              font.legend = c(14))
-  output_list = list()
-  output_list$bp = bp
-  return(output_list)
-    }
+    
+    bp <- ggpar(bp,legend = "right",
+                font.legend = c(14))
+    output_list = list()
+    output_list$bp = bp
+    return(output_list)
+  }
   else{
     output_list = list()
     x = NA
@@ -257,7 +181,9 @@ DTU_special <- function(d_list = tryout, condition_col = "Condition", first.leve
 
 
 
-DTU_general <- function(d_list, condition_col = "Condition", first.level = "Hct116", ref.level = "MCF7", samps = metadata, gtf_table, cores = 4, pvalue_input = 0.05){
+DTU_general <- function(dxd, condition_col = "Condition", first.level = "Hct116", ref.level = "MCF7", 
+                        gtf_table, cores = 4, 
+                        pvalue_input = 0.05){
   ###############################################################################################
   #                                                                                             #
   #                                                                                             #
@@ -268,30 +194,11 @@ DTU_general <- function(d_list, condition_col = "Condition", first.level = "Hct1
   #                                                                                             #
   #                                                                                             #
   ###############################################################################################
-  output_list = list()
-  d = d_list$drim
-  counts = d_list$counts
-  samps= d_list$samps
-
-  sample.data <- DRIMSeq::samples(d)
-  print(sample.data)
-  sample.data$condition <- factor(sample.data$condition,levels = c(first.level,ref.level))
-  count.data <- round(as.matrix(counts(d)[,-c(1:2)]))
-  print(count.data)
   
 
-  dxd <- DEXSeqDataSet(countData=count.data,
-                       sampleData=sample.data,
-                       design=~sample + exon + condition:exon,
-                       featureID=counts(d)$feature_id,
-                       groupID=counts(d)$gene_id)
-  dxd$condition = factor(dxd$condition,levels = c(first.level,ref.level))
-  system.time({
-    dxd <- estimateSizeFactors(dxd)
-    dxd <- estimateDispersions(dxd, quiet=TRUE)
-    dxd <- testForDEU(dxd, reducedModel=~sample + exon)
-    dxd <- estimateExonFoldChanges( dxd, fitExpToVar="condition", denominator=ref.level)
-  })
+  dxd$Condtition = factor(dxd$Condition,levels = c(first.level,ref.level))
+  dxd <- estimateExonFoldChanges( dxd, fitExpToVar="Condition", denominator=ref.level)
+  
   dxr <- DEXSeqResults(dxd, independentFiltering=FALSE)
   output_list = list()
   dxr_df = as.data.frame(na.omit(dxr))
@@ -319,12 +226,12 @@ DTU_general <- function(d_list, condition_col = "Condition", first.level = "Hct1
   
   dxr_df$label = data_to_label
   dxr_df
-
+  
   regex = c('log2fold') 
   column_list = as.vector(colnames(dxr_df))
   log_2_fold_name = as.character(column_list[which(grepl(regex,column_list))])
   dxr_df["log_2_fold_Change"] = dxr_df[log_2_fold_name]
-
+  
   
   print("Line Y passed")
   
@@ -341,7 +248,7 @@ DTU_general <- function(d_list, condition_col = "Condition", first.level = "Hct1
   dxr_df$gene_name = gtf_table[match(dxr_df$groupID,gtf_table$gene_id),"gene_name"]
   dxr_df$transcript_name = gtf_table[match(dxr_df$featureID,gtf_table$transcript_id),"transcript_name"]
   rownames(dxr_df) = dxr_df$transcript_name
-
+  
   volcano_plot_dex <- ggplot(dxr_df,mapping = aes(x = log_2_fold_Change, y=-log10(padj),color = Significance_reg)) +
     geom_point(size=1.75) + 
     ggtitle(paste0("Volcano Plot (", first.level, " vs. ", ref.level, ")")) + # add conditions to title

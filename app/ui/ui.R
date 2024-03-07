@@ -86,7 +86,7 @@ ui <- dashboardPage(
     sidebarMenu(
       id = "tabs",
       ### 1. Start page ####
-      menuItem("Welcome", tabName = "start_preprocessing_page", icon = icon("hand-spock")),
+      #menuItem("Welcome", tabName = "start_preprocessing_page", icon = icon("hand-spock")),
       ### 2. Preprocessing ####
       menuItem("Preprocessing", tabName = "pre_settings", icon = icon("cog", lib = "glyphicon")),
       ### 3. Run Overview ####
@@ -208,36 +208,36 @@ ui <- dashboardPage(
     
     ### 1. Start page ####
     tabItems(
-      tabItem(
-        tabName = "start_preprocessing_page",
-        fluidRow(
-          column(12, br()),
-          column(4, br()),
-          column(4, h1(HTML("Welcome to NanopoReaTA"), style="text-align:center")),
-          column(4, br()),
-          column(12, br())
-        ),
-        fluidRow(column(12, actionButton("jump_to_settings_preprocessing_B", "Start analysis",
-                                    style = "white-space: normal;display:inline-block;width:50%;text-align: center;
-                                                        color: #fff; height: 70pt;
-                                                        font-size:180%;
-                                                        background-color: #e76f51;"
-            ),
-            align = "center"
-            ),
-            column(12, br()),
-            column(12, br()),
-            
-            box(
-              fluidRow(column(
-                12,
-                includeMarkdown("./../README.md")
-              )),
-            title = "Documentation", status = "primary", solidHeader = T, collapsible = T, width = 12
-          )
-        )
-      ),
-      ### 2. Preprocessing ####
+      # tabItem(
+      #   tabName = "start_preprocessing_page",
+      #   fluidRow(
+      #     column(12, br()),
+      #     column(4, br()),
+      #     column(4, h1(HTML("Welcome to NanopoReaTA"), style="text-align:center")),
+      #     column(4, br()),
+      #     column(12, br())
+      #   ),
+      #   fluidRow(column(12, actionButton("jump_to_settings_preprocessing_B", "Start analysis",
+      #                               style = "white-space: normal;display:inline-block;width:50%;text-align: center;
+      #                                                   color: #fff; height: 70pt;
+      #                                                   font-size:180%;
+      #                                                   background-color: #e76f51;"
+      #       ),
+      #       align = "center"
+      #       ),
+      #       column(12, br()),
+      #       column(12, br()),
+      # 
+      #       box(
+      #         fluidRow(column(
+      #           12,
+      #           includeMarkdown("./../README.md")
+      #         )),
+      #       title = "Documentation", status = "primary", solidHeader = T, collapsible = T, width = 12
+      #     )
+      #   )
+      # ),
+      ## 2. Preprocessing ####
       tabItem(
         tabName = "pre_settings",
         fluidPage(
@@ -248,190 +248,173 @@ ui <- dashboardPage(
             width = 12,
             # The id lets us use input$tabset1 on the server to find the current tab
             id = "tabset1",
-            tabPanel(
-              title = "Metadata creator", value = "panel_metadata",
-                box(
-                      title = "Create metadata file",
-                      status = "primary",
-                      solidHeader = TRUE,
-                      collapsible = TRUE,
-                      width = 12,
-                      fluidRow(
-                      column(12,
-                      withSpinner(DT::dataTableOutput("editable.metadata.table.out"), color = "#0dc5c1")
-                      ),
-                    ),
-                      fluidRow(
-                      column(
-                      10,align= "center", div(style = "display:inline-block", downloadButton("saveMetadata",
-                      label = "Download metadata",
-                      align = "center",
-                      icon = icon("arrow-alt-circle-down"),
-                      class = "btn btn-primary",
-                      style = "font-size:200%; color: white; background-color: #83c5be; border-radius: 5px"
-                        )),
-                      ),
-                      column(2, div(
-                      style = "display:inline-block; padding-left:15px; float:right;vertical-align:top", actionButton("jump2Configuration",
-                      label = "",
-                      icon = icon("arrow-alt-circle-right"),
-                      class = "btn btn-primary",
-                      style = "font-size:200%; color: white; background-color: #83c5be; border-radius: 5px"
-                        ))
-                      ),
-                    ),
-            )),
-            tabPanel(
-              title = "Configuration", value = "panel1",
-              box(
-                    title = "Settings for Preprocessing",
-                    status = "primary",
-                    solidHeader = TRUE,
-                    collapsible = TRUE,
-                    width = 12,
-              fluidRow(
-                column(12, h3(p(em(strong("Load configuration file (if present)")))), align = "left", 
-                       style = "margin-bottom: 10px; margin-top: -10px"),
-                column(6,shinyFilesButton("config_file", "Select file", 
-                                   title = "Please select a file:", multiple = FALSE,
-                                   buttonType = "default", class = NULL),
-                       verbatimTextOutput("conig_file_out"), align = "left", style = "margin-bottom: 10px; margin-top: -10px"),
-                column(12, useShinyjs(),
-                    column(12, h3(p(em(strong("Number of cores")))), align = "left", style = "margin-bottom: 10px; margin-top: -10px"),
-                    column(12, sliderInput("cores", "Cores", 1, detectCores() - 2, detectCores() / 2, step = 1)),
-                    column(12, helpText("Note: If you only want to run NanopoReaTa, select all cores.",
-                                        style = "margin-bottom: 10px; margin-top: -10px"
-                    )),
-                    column(12, h3(p(em(strong("Run information")))), align = "left", style = "margin-bottom: 10px; margin-top: -10px"),
-                    column(12, radioButtons("preprocess", "Preprocessing?", choices = c("Yes" = 1, "No" = 0))),
-                    column(12, radioButtons("barcoded", "Barcoding present", choices = c("Yes" = 1, "No" = 0))),
-                    column(12, radioButtons("DRS", "Sequencing method", choices = c("direct RNA" = 1, "(direct) cDNA" = 0))),
-                    
-                    column(12, h3(p(em(strong("Fastq Files and Metadata")))), align = "left", style = "margin-bottom: 10px; margin-top: -10px"),
-                    column(12, h4(p(strong("Select path to main MinKNOW output directory"))), align = "left", style = "margin-top: -10px"),
-                    column(12, helpText("Note: Directory names within the choosen directory must be identical to the sample names stored in the metadata file.",
-                                        style = "margin-bottom: 10px; margin-top: -10px"
-                    )),
-                    column(6, shinyDirButton("fastq_files", "MinKNOW_output/", 
-                                       title = "Please select a directory:",
-                                       buttonType = "default", class = NULL), 
-                           verbatimTextOutput("fastq_file_out"), align = "left", style = "margin-bottom: 10px; margin-top: -5px"),
-                   
-                    column(12, h4(p(strong("Select sample description file (tab-separated)"))), align = "left", style = "margin-top: -10px"),
-                    column(12, helpText("Note: Sample names must be stored in a column named >Sample_names<. The file must be tab separated.",
-                                        style = "margin-bottom: 10px; margin-top: -10px"
-                    )),
-                    
-                    column(6, shinyFilesButton("metadata_file", "metadata.tsv", 
-                                       title = "Please select a file:", multiple = FALSE,
-                                       buttonType = "default", class = NULL),
-                           verbatimTextOutput("metadata_file_out"), align = "left", style = "margin-bottom: 10px; margin-top: -5px"),
-                    
-                    column(12, h3(p(em(strong("Mapping")))), align = "left", style = "margin-bottom: 10px; margin-top: -10px"),
-                    column(6, h4(p(strong("Genome"))), align = "left", style = "margin-bottom: 10px; margin-top: -10px"),
-                    column(6, h4(p(strong("Transcriptome"))), align = "left", style = "margin-bottom: 10px; margin-top: -10px"),
-                    
-                    column(6, shinyFilesButton("genome_fasta_file", "genome.fa", 
-                                               title = "Please select a file:", multiple = FALSE,
-                                               buttonType = "default", class = NULL), align = "left", style = "margin-top: -10px"),
-                    column(6, shinyFilesButton("transcriptome_fasta_file", "transcriptome.fa", 
-                                               title = "Please select a file:", multiple = FALSE,
-                                               buttonType = "default", class = NULL), align = "left", style = "margin-top: -10px"),
-                    column(6, verbatimTextOutput("genome_fasta_file_out"), align = "left"),
-                    column(6, verbatimTextOutput("transcriptome_fasta_file_out"), align = "left"),                    
-                    column(12, h3(p(em(strong("Feature quantification")))), align = "left", style = "margin-bottom: 10px; margin-top: -10px"),
-                    column(12, helpText("Note: Fasta and gtf files must be downloaded from the same source (e.g. UCSC, GenCode,...) and assembly version (e.g. hg19 or hg38 for human)",
-                                        style = "margin-bottom: 10px; margin-top: -10px"
-                    )),
-                    column(6, h4(p(strong("Gene/Transcript annotation (gtf)"))), align = "left", style = "margin-bottom: 10px; margin-top: -10px"),
-                    column(6, h4(p(strong("Gene/Transcript annotation (bed)"))), align = "left", style = "margin-bottom: 10px; margin-top: -10px"),
-
-                    column(6, shinyFilesButton("gtf_file", "GTF", 
-                                               title = "Please select a file:", multiple = FALSE,
-                                               buttonType = "default", class = NULL), align = "left", style = "margin-top: -10px"),                    
-                    column(6, shinyFilesButton("bed_file", "BED", 
-                                               title = "Please select a file:", multiple = FALSE,
-                                               buttonType = "default", class = NULL), align = "left", style = "margin-top: -10px"),
-                    column(6, verbatimTextOutput("gtf_file_out"), align = "left"),
-                    column(6, verbatimTextOutput("bed_file_out"), align = "left"),                    
-                    column(12, h3(p(em(strong("Output")))), align = "left", style = "margin-bottom: 10px; margin-top: -10px"),
-                    column(12, h4(p(strong("Path to output directory"))), align = "left", style = "margin-top: -10px"),
-                    column(12, helpText("Note: Mapping (.bam) (and gene counts, and transcript counts) files will be saved to this directory.",
-                                        style = "margin-bottom: 20px; margin-top: -10px"
-                    )),
-                    column(6, shinyDirButton("run_dir", "Select directory", 
-                                               title = "Please select a directory:",
-                                               buttonType = "default", class = NULL),
-                            verbatimTextOutput("run_dir_out"), align = "left")
-                    )
-              )),
-              fluidRow(
-                column(12, box(uiOutput("jump2overview_B.out"), width = 13, align = "right"), align = "right", style = "margin-bottom: 10px;", style = "margin-top: -10px;")
-              )
-            ),
+            # tabPanel(
+            #   title = "Metadata creator", value = "panel_metadata",
+            #     box(
+            #           title = "Create metadata file",
+            #           status = "primary",
+            #           solidHeader = TRUE,
+            #           collapsible = TRUE,
+            #           width = 12,
+            #           fluidRow(
+            #           column(12,
+            #           withSpinner(DT::dataTableOutput("editable.metadata.table.out"), color = "#0dc5c1")
+            #           ),
+            #         ),
+            #           fluidRow(
+            #           column(
+            #           10,align= "center", div(style = "display:inline-block", downloadButton("saveMetadata",
+            #           label = "Download metadata",
+            #           align = "center",
+            #           icon = icon("arrow-alt-circle-down"),
+            #           class = "btn btn-primary",
+            #           style = "font-size:200%; color: white; background-color: #83c5be; border-radius: 5px"
+            #             )),
+            #           ),
+            #           column(2, div(
+            #           style = "display:inline-block; padding-left:15px; float:right;vertical-align:top", actionButton("jump2Configuration",
+            #           label = "",
+            #           icon = icon("arrow-alt-circle-right"),
+            #           class = "btn btn-primary",
+            #           style = "font-size:200%; color: white; background-color: #83c5be; border-radius: 5px"
+            #             ))
+            #           ),
+            #         ),
+            # )),
+            # tabPanel(
+            #   title = "Configuration", value = "panel1",
+            #   box(
+            #         title = "Settings for Preprocessing",
+            #         status = "primary",
+            #         solidHeader = TRUE,
+            #         collapsible = TRUE,
+            #         width = 12,
+            #   fluidRow(
+            #     column(12, h3(p(em(strong("Load configuration file (if present)")))), align = "left",
+            #            style = "margin-bottom: 10px; margin-top: -10px"),
+            #     column(6,shinyFilesButton("config_file", "Select file",
+            #                        title = "Please select a file:", multiple = FALSE,
+            #                        buttonType = "default", class = NULL),
+            #            verbatimTextOutput("conig_file_out"), align = "left", style = "margin-bottom: 10px; margin-top: -10px"),
+            #     column(12, useShinyjs(),
+            #         column(12, h3(p(em(strong("Number of cores")))), align = "left", style = "margin-bottom: 10px; margin-top: -10px"),
+            #         column(12, sliderInput("cores", "Cores", 1, detectCores() - 2, detectCores() / 2, step = 1)),
+            #         column(12, helpText("Note: If you only want to run NanopoReaTa, select all cores.",
+            #                             style = "margin-bottom: 10px; margin-top: -10px"
+            #         )),
+            #         column(12, h3(p(em(strong("Run information")))), align = "left", style = "margin-bottom: 10px; margin-top: -10px"),
+            #         column(12, radioButtons("preprocess", "Preprocessing?", choices = c("Yes" = 1, "No" = 0))),
+            #         column(12, radioButtons("barcoded", "Barcoding present", choices = c("Yes" = 1, "No" = 0))),
+            #         column(12, radioButtons("DRS", "Sequencing method", choices = c("direct RNA" = 1, "(direct) cDNA" = 0))),
+            # 
+            #         column(12, h3(p(em(strong("Fastq Files and Metadata")))), align = "left", style = "margin-bottom: 10px; margin-top: -10px"),
+            #         column(12, h4(p(strong("Select path to main MinKNOW output directory"))), align = "left", style = "margin-top: -10px"),
+            #         column(12, helpText("Note: Directory names within the choosen directory must be identical to the sample names stored in the metadata file.",
+            #                             style = "margin-bottom: 10px; margin-top: -10px"
+            #         )),
+            #         column(6, shinyDirButton("fastq_files", "MinKNOW_output/",
+            #                            title = "Please select a directory:",
+            #                            buttonType = "default", class = NULL),
+            #                verbatimTextOutput("fastq_file_out"), align = "left", style = "margin-bottom: 10px; margin-top: -5px"),
+            # 
+            #         column(12, h4(p(strong("Select sample description file (tab-separated)"))), align = "left", style = "margin-top: -10px"),
+            #         column(12, helpText("Note: Sample names must be stored in a column named >Sample_names<. The file must be tab separated.",
+            #                             style = "margin-bottom: 10px; margin-top: -10px"
+            #         )),
+            # 
+            #         column(6, shinyFilesButton("metadata_file", "metadata.tsv",
+            #                            title = "Please select a file:", multiple = FALSE,
+            #                            buttonType = "default", class = NULL),
+            #                verbatimTextOutput("metadata_file_out"), align = "left", style = "margin-bottom: 10px; margin-top: -5px"),
+            # 
+            #         column(12, h3(p(em(strong("Mapping")))), align = "left", style = "margin-bottom: 10px; margin-top: -10px"),
+            #         column(6, h4(p(strong("Genome"))), align = "left", style = "margin-bottom: 10px; margin-top: -10px"),
+            #         column(6, h4(p(strong("Transcriptome"))), align = "left", style = "margin-bottom: 10px; margin-top: -10px"),
+            # 
+            #         column(6, shinyFilesButton("genome_fasta_file", "genome.fa",
+            #                                    title = "Please select a file:", multiple = FALSE,
+            #                                    buttonType = "default", class = NULL), align = "left", style = "margin-top: -10px"),
+            #         column(6, shinyFilesButton("transcriptome_fasta_file", "transcriptome.fa",
+            #                                    title = "Please select a file:", multiple = FALSE,
+            #                                    buttonType = "default", class = NULL), align = "left", style = "margin-top: -10px"),
+            #         column(6, verbatimTextOutput("genome_fasta_file_out"), align = "left"),
+            #         column(6, verbatimTextOutput("transcriptome_fasta_file_out"), align = "left"),
+            #         column(12, h3(p(em(strong("Feature quantification")))), align = "left", style = "margin-bottom: 10px; margin-top: -10px"),
+            #         column(12, helpText("Note: Fasta and gtf files must be downloaded from the same source (e.g. UCSC, GenCode,...) and assembly version (e.g. hg19 or hg38 for human)",
+            #                             style = "margin-bottom: 10px; margin-top: -10px"
+            #         )),
+            #         column(6, h4(p(strong("Gene/Transcript annotation (gtf)"))), align = "left", style = "margin-bottom: 10px; margin-top: -10px"),
+            #         column(6, h4(p(strong("Gene/Transcript annotation (bed)"))), align = "left", style = "margin-bottom: 10px; margin-top: -10px"),
+            # 
+            #         column(6, shinyFilesButton("gtf_file", "GTF",
+            #                                    title = "Please select a file:", multiple = FALSE,
+            #                                    buttonType = "default", class = NULL), align = "left", style = "margin-top: -10px"),
+            #         column(6, shinyFilesButton("bed_file", "BED",
+            #                                    title = "Please select a file:", multiple = FALSE,
+            #                                    buttonType = "default", class = NULL), align = "left", style = "margin-top: -10px"),
+            #         column(6, verbatimTextOutput("gtf_file_out"), align = "left"),
+            #         column(6, verbatimTextOutput("bed_file_out"), align = "left"),
+            #         column(12, h3(p(em(strong("Output")))), align = "left", style = "margin-bottom: 10px; margin-top: -10px"),
+            #         column(12, h4(p(strong("Path to output directory"))), align = "left", style = "margin-top: -10px"),
+            #         column(12, helpText("Note: Mapping (.bam) (and gene counts, and transcript counts) files will be saved to this directory.",
+            #                             style = "margin-bottom: 20px; margin-top: -10px"
+            #         )),
+            #         column(6, shinyDirButton("run_dir", "Select directory",
+            #                                    title = "Please select a directory:",
+            #                                    buttonType = "default", class = NULL),
+            #                 verbatimTextOutput("run_dir_out"), align = "left")
+            #         )
+            #   )),
+            #   fluidRow(
+            #     column(12, box(uiOutput("jump2overview_B.out"), width = 13, align = "right"), align = "right", style = "margin-bottom: 10px;", style = "margin-top: -10px;")
+            #   )
+            # ),
             tabPanel(
               title = "Sample settings", value = "panel2", fluidRow(
                 column(12, uiOutput("metadata.tables.out")),
               ),
               fluidRow(
                 column(12, uiOutput("design.matrix.out"))
-              ),
-              fluidRow(
-                column(
-                  12, div(style = "display:inline-block; padding-left:15px; float:left", actionButton("back2presettings_B",
-                    label = "",
-                    icon = icon("arrow-alt-circle-left"),
-                    class = "btn btn-primary",
-                    style = "font-size:200%; color: white; background-color: #83c5be; border-radius: 5px"
-                  )),
-                  div(style = "display:inline-block; padding-right:15px; float:right", actionButton("jump_to_settings_overview_B", "Settings overview",
-                    icon = icon("arrow-alt-circle-right"),
-                    class = "btn btn-primary",
-                    style = "font-size:200%; color: white;
-                                                        background-color: #e76f51;
-                                                        border-radius: 5px"
-                  ))
-                )
               )
             ),
-            tabPanel(
-              title = "Settings Overview", value = "panel3", fluidRow(
-                column(
-                  12,
-                  box(
-                    title = "List of settings for Preprocessing",
-                    status = "primary",
-                    solidHeader = TRUE,
-                    collapsible = TRUE,
-                    width = 12,
-                    fluidRow(column(5, uiOutput("metadata_load"))),
-                    fluidRow(
-                      column(
-                        12,
-                        HTML("<div style ='overflow:auto;  ' >"),
-                        DT::dataTableOutput("table_of_settings_df"),
-                        HTML("</div>")
-                      )
-                    )
-                  )
-                )
-              ),
-              fluidRow(
-                column(2, div(
-                  style = "display:inline-block; padding-left:15px; float:left;vertical-align:top", actionButton("back2presettings2_B",
-                    label = "",
-                    icon = icon("arrow-alt-circle-left"),
-                    class = "btn btn-primary",
-                    style = "font-size:200%; color: white; background-color: #83c5be; border-radius: 5px"
-                  ),
-                  style = "margin-bottom: 10px;", style = "margin-top: -10px;"
-                ), ),
-                column(8, uiOutput("confirm_preprocess_settings"), align = "center", style = "margin-bottom: 10px;", style = "margin-top: -10px;")
-              )
-            )
+            # tabPanel(
+            #   title = "Settings Overview", value = "panel3", fluidRow(
+            #     column(
+            #       12,
+            #       box(
+            #         title = "List of settings for Preprocessing",
+            #         status = "primary",
+            #         solidHeader = TRUE,
+            #         collapsible = TRUE,
+            #         width = 12,
+            #         fluidRow(column(5, uiOutput("metadata_load"))),
+            #         fluidRow(
+            #           column(
+            #             12,
+            #             HTML("<div style ='overflow:auto;  ' >"),
+            #             DT::dataTableOutput("table_of_settings_df"),
+            #             HTML("</div>")
+            #           )
+            #         )
+            #       )
+            #     )
+            #   ),
+            #   fluidRow(
+            #     column(2, div(
+            #       style = "display:inline-block; padding-left:15px; float:left;vertical-align:top", actionButton("back2presettings2_B",
+            #         label = "",
+            #         icon = icon("arrow-alt-circle-left"),
+            #         class = "btn btn-primary",
+            #         style = "font-size:200%; color: white; background-color: #83c5be; border-radius: 5px"
+            #       ),
+            #       style = "margin-bottom: 10px;", style = "margin-top: -10px;"
+            #     ), ),
+            #     column(8, uiOutput("confirm_preprocess_settings"), align = "center", style = "margin-bottom: 10px;", style = "margin-top: -10px;")
+            #   )
+            # )
           )
         )
-      ),
+       ),
       ### 3. Run Overview ####
       tabItem(
         tabName = "run_overview",
@@ -618,19 +601,19 @@ ui <- dashboardPage(
          tabName = "dea_main",
          fluidPage(
            fluidRow(
-            box(
-                  title = "Differential Expression Analysis",
-                  width = 12,
-                  status = "primary",
-                  solidHeader = T,
-                  collapsible = F,
-                  collapsed = F,
-                 column(12, h3(p(em(strong("Significance threshold")))), align = "left", style = "margin-bottom: 10px; margin-top: -10px"),
-                 column(12, textInput("pvalue","adjusted p-value", value = 0.05)),
-                 column(4, uiOutput("submit_dge"), align = "center", style = "margin-bottom: 10px;", style = "margin-top: -10px;"),
-                 column(4, uiOutput("submit_dte"), align = "center", style = "margin-bottom: 10px;", style = "margin-top: -10px;"),
-                 column(4, uiOutput("submit_dt_preprocess"), align = "center", style = "margin-bottom: 10px;", style = "margin-top: -10px;")
-            ),
+           box(
+                 title = "Differential Expression Analysis",
+                 width = 12,
+                 status = "primary",
+                 solidHeader = T,
+                 collapsible = F,
+                 collapsed = F,
+                column(12, h3(p(em(strong("Significance threshold")))), align = "left", style = "margin-bottom: 10px; margin-top: -10px"),
+                column(12, textInput("pvalue","adjusted p-value", value = 0.05)),
+                column(4, uiOutput("submit_dge"), align = "center", style = "margin-bottom: 10px;", style = "margin-top: -10px;"),
+                column(4, uiOutput("submit_dte"), align = "center", style = "margin-bottom: 10px;", style = "margin-top: -10px;"),
+              column(4, uiOutput("submit_dt_preprocess"), align = "center", style = "margin-bottom: 10px;", style = "margin-top: -10px;")
+           ),
           column(12,
            tabBox(
              width = 12, id = "dea.box",
