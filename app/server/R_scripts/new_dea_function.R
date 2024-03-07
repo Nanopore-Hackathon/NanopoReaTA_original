@@ -1,31 +1,34 @@
 #!/usr/bin/env Rscript
 
 ###### Functions for DEA ######
+library(DESeq2)
+library(data.table)
+
 
 options(warn=-1)
 
 safe_colorblind_palette <- c("#88CCEE", "#CC6677", "#DDCC77", "#117733", "#332288", "#AA4499", 
                              "#44AA99", "#999933", "#882255", "#661100", "#6699CC", "#888888")
 
-createDDS2 <- function(counts, metadata, first.level, ref.level){
-  flog.info("########## Create DDS object ###########")
-
-  dds <- DESeqDataSetFromMatrix(countData = counts,
-                                colData = metadata,
-                                design = ~ conditions)
-  
-  
-  # dds$conditions = factor(dds$conditions, levels = c(first.level, ref.level))
-  
-  dds <- DESeq(dds, parallel = T)
-
-  return(dds)
-}
+# createDDS2 <- function(counts, metadata, first.level, ref.level){
+#   flog.info("########## Create DDS object ###########")
+# 
+#   #dds <- DESeqDataSetFromMatrix(countData = counts,
+#                                 colData = metadata,
+#                                 design = ~ Conditions)
+#   
+#   
+#   # dds$Conditions = factor(dds$Conditions, levels = c(first.level, ref.level))
+#   
+#   dds <- DESeq(dds, parallel = T)
+# 
+#   return(dds)
+# }
 
 createRES <- function(dds, first.level, ref.level, pvalue, gtf_file){
-  flog.info("########## Create results object ###########")
+  #flog.info("########## Create results object ###########")
 
-  res <- results(dds, contrast = c("conditions", first.level, ref.level), alpha = pvalue, parallel = T)
+  res <- results(dds, contrast = c("Conditions", first.level, ref.level), alpha = pvalue, parallel = T)
   res_df <- as.data.frame(res)
   res_df <- na.omit(res_df)
   res_df <- res_df[order(res_df$padj, res_df$pvalue, decreasing = F),]
@@ -43,14 +46,14 @@ createRES <- function(dds, first.level, ref.level, pvalue, gtf_file){
 }
 
 createPCA<- function(rld, first.level, ref.level, condi_col){
-  flog.info("########## Create PCA plot ###########")
+  #flog.info("########## Create PCA plot ###########")
 
   rldObject = rld
-  pcaData <- plotPCA(rldObject, intgroup="conditions", returnData=TRUE)
+  pcaData <- plotPCA(rldObject, intgroup="Conditions", returnData=TRUE)
   
   percentVar <- round(100 * attr(pcaData, "percentVar"))
 
-  pca_plot = ggplot(pcaData, aes(PC1, PC2, color=conditions, label=name)) +
+  pca_plot = ggplot(pcaData, aes(PC1, PC2, color=Conditions, label=name)) +
     scale_color_manual(values = condi_col) +
     geom_point(size=5) +
     ggtitle("PCA plot") +
@@ -73,7 +76,7 @@ createPCA<- function(rld, first.level, ref.level, condi_col){
 }
 
 createVolcano <- function(res_df, condi_col){
-  flog.info("########## Create volcano plot ###########")
+  #flog.info("########## Create volcano plot ###########")
   res_df$Significance_reg = ifelse(res_df$Significance, 
                                    ifelse(res_df$log2FoldChange > 0, "Up", "Down"), 
                                    "Not sig.")
@@ -101,7 +104,7 @@ createVolcano <- function(res_df, condi_col){
     #scale_color_manual(values = colorCode) +
     geom_point(size=1.75) +
     xlab("log2 fold change") + ylab("-log10 p-adjusted")+
-    ggtitle(paste0("Differential Expression (", names(condi_col)[1], " vs. ", names(condi_col)[2], ")")) + # add conditions to title
+    ggtitle(paste0("Differential Expression (", names(condi_col)[1], " vs. ", names(condi_col)[2], ")")) + # add Conditions to title
     scale_color_manual(values = color_code) +
     theme_bw() +
     guides(colour = guide_legend(override.aes = list(size=5))) +
@@ -127,16 +130,16 @@ createVolcano <- function(res_df, condi_col){
 }
 
 createHeatmap <- function(dds, rld, condi_col, main_color = "RdBu", gtf_file = NA, genes = NA){
-  flog.info("########## Create Heatmap of Expression ###########")
+  #flog.info("########## Create Heatmap of Expression ###########")
 
   print("Heatmap will be created...")
-  colList = list("conditions" = condi_col)
+  colList = list("Conditions" = condi_col)
   select <- genes[, "gencode"]
-  df <- as.data.frame(colData(dds)["conditions"])
+  df <- as.data.frame(colData(dds)["Conditions"])
   heat_input = assay(rld)[select,]
   row.names(heat_input) = genes[, "names"]
 
-  ha = HeatmapAnnotation(Condition = df$conditions,
+  ha = HeatmapAnnotation(Condition = df$Conditions,
                         col = list(Condition = condi_col),
                         name = "Condition   ",
                         show_annotation_name = F,
@@ -173,7 +176,7 @@ createHeatmap <- function(dds, rld, condi_col, main_color = "RdBu", gtf_file = N
   )
   g_draw = draw(g, background = "transparent")
 
-  ha2 = HeatmapAnnotation(Condition = df$conditions,
+  ha2 = HeatmapAnnotation(Condition = df$Conditions,
                          col = list(Condition = condi_col),
                          name = "Condition   ",
                          show_annotation_name = F,
@@ -215,11 +218,11 @@ createHeatmap <- function(dds, rld, condi_col, main_color = "RdBu", gtf_file = N
 }
 
 createSam2Sam <- function(rld){
-  flog.info("########## Create Sample to sample distance heatmap ###########")
+  #flog.info("########## Create Sample to sample distance heatmap ###########")
 
   sampleDists <- dist(t(assay(rld)))
   sampleDistMatrix <- as.matrix(sampleDists)
-  rownames(sampleDistMatrix) <- paste(rld$conditions, rld$Samples, sep="-")
+  rownames(sampleDistMatrix) <- paste(rld$Conditions, rld$Samples, sep="-")
   colnames(sampleDistMatrix) <- NULL
   colors <- colorRampPalette( rev(brewer.pal(9, "Blues")))(255)
 
@@ -270,29 +273,46 @@ createSam2Sam <- function(rld){
   return(list(g_draw, g_draw2))
 }
 
-run_preprocessing_dea <- function(rdo, condition.col, first.level, ref.level, pvalue, gtf_file){
-  # removed meta.file, counts.file
-  flog.info("########## Differential Expression Analysis ###########")
-  load(rdo)
 
+run_preprocessing_dea <- function(dds, rld, condition.col, first.level, ref.level, pvalue, gtf_file){
+  # removed meta.file, counts.file
+  # flog.info("########## Differential Expression Analysis ###########")
+  load("/home/lioba/Downloads/test")
+  dds <- dds
+  rld <- rld
+   
+  # gtf_file <- fread(gtf_file, header = T)
+  # gtf_file <- as.data.frame(gtf_file)
+  
   res_df = createRES(dds, first.level, ref.level, pvalue, gtf_file)
   print(head(res_df))
-  
-  deaProcess = list(res_df = res_df, 
-                    rld = rld, 
-                    dds = dds, 
-                    # counts = counts, 
-                    # metadata = metadata, 
-                    first.level = first.level, 
+
+  deaProcess = list(res_df = res_df,
+                    rld = rld,
+                    dds = dds,
+                    # counts = counts,
+                    # metadata = metadata,
+                    first.level = first.level,
                     ref.level = ref.level)
-  
+
 }
 
-save_rds <- function(deaResults, output.dir){
-  
-  flog.info("Saving results to the rds object: deaResults.RDS")
-  print(names(deaResults))
-  print(paste0(output.dir, "deaResults.rds"))
-  saveRDS(deaResults, paste0(output.dir, "deaResults.rds"))
-  
-}
+#### TESTING ####
+# run_preprocessing_dea(dds = dds,
+#                       rld = rld,
+#                       condition.col = "Condition",
+#                       first.level = "A", 
+#                       ref.level = "B", 
+#                       pvalue = 0.05, 
+#                       gtf_file = gtf_file
+# )
+
+# save_rds <- function(deaResults, output.dir){
+#   
+#   flog.info("Saving results to the rds object: deaResults.RDS")
+#   print(names(deaResults))
+#   print(paste0(output.dir, "deaResults.rds"))
+#   saveRDS(deaResults, paste0(output.dir, "deaResults.rds"))
+#   
+# }
+
