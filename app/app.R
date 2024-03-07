@@ -8,12 +8,13 @@
 
 # ______________________________________________________________________________
 # LIBRARIES ####
-options(repos = list(CRAN="http://cran.rstudio.com/"))
-source("install.R", local = T)
+#options(repos = list(CRAN="http://cran.rstudio.com/"))
+#source("install.R", local = T)
+for (lib in names(readRDS("NanopoReaTA_Rpackages.RDS"))) { library(lib, character.only = TRUE) }
 
 # Save list of required R packages + version
-package_versions = data.table::rbindlist(lapply(sessionInfo()$otherPkgs, function(i) data.frame("Version" = i$Version)), idcol = "pkg")
-write.table(package_versions, "NanopoReaTA_Rpackage_versions.txt", sep = "\t", col.names = T, row.names = F, quote = F)
+# package_versions = data.table::rbindlist(lapply(sessionInfo()$otherPkgs, function(i) data.frame("Version" = i$Version)), idcol = "pkg")
+# write.table(package_versions, "NanopoReaTA_Rpackage_versions.txt", sep = "\t", col.names = T, row.names = F, quote = F)
 
 # ______________________________________________________________________________
 # SETTINGS ####
@@ -47,7 +48,7 @@ source("server/server.R", local = TRUE)
 
 # ______________________________________________________________________________
 # LAUNCH APP
-shinyApp(ui, server)
+shinyApp(ui, server, options=list(port=as.integer(Sys.getenv("PORT"))))
 
 
 
