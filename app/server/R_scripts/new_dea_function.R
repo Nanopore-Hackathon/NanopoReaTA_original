@@ -270,7 +270,8 @@ createSam2Sam <- function(rld){
   return(list(g_draw, g_draw2))
 }
 
-run_preprocessing_dea <- function(rdo, meta.file, counts.file, condition.col, first.level, ref.level, pvalue, gtf_file){
+run_preprocessing_dea <- function(rdo, condition.col, first.level, ref.level, pvalue, gtf_file){
+  # removed meta.file, counts.file
   flog.info("########## Differential Expression Analysis ###########")
   load(rdo)
 

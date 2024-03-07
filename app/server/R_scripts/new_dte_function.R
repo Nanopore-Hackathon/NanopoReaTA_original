@@ -271,7 +271,8 @@ createSam2Sam_DTE <- function(rld){
   return(list(g_draw, g_draw2))
 }
 
-run_preprocessing_dte <- function(rdo, meta.file, counts.file, condition.col, first.level, ref.level, pvalue, gtf_file){
+run_preprocessing_dte <- function(rdo, condition.col, first.level, ref.level, pvalue, gtf_file){
+  # removed meta.file, counts.file
   flog.info("########## Differential Expression Analysis ###########")
   
   load(rdo)

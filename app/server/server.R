@@ -1895,8 +1895,9 @@ server <- function(input, output, session) {
     }
     if (!(is.null(countsfile$df)) & !is.null(metadata()) & !any(colSums(countsfile$df) == 0)){
         cat(unlist(metadata()))
-        dea_res_preprocess$df_res <- run_preprocessing_dea(meta.file = metadata(),
-                              counts.file = countsfile$df, 
+        dea_res_preprocess$df_res <- run_preprocessing_dea(rdo,
+                              # meta.file = metadata(),
+                              # counts.file = countsfile$df, 
                               condition.col = input$design_column,
                               first.level = input$feature_A, 
                               ref.level = input$feature_B, 
@@ -2070,8 +2071,9 @@ server <- function(input, output, session) {
     }
     if (!(is.null(countsfile$df_trans)) & !is.null(metadata()) & !any(colSums(countsfile$df_trans) == 0)){
         cat(unlist(metadata()))
-        dte_res_preprocess$df_res <- run_preprocessing_dte(meta.file = metadata(),
-                              counts.file = countsfile$df_trans,
+        dte_res_preprocess$df_res <- run_preprocessing_dte(rdo,
+                              # meta.file = metadata(),
+                              # counts.file = countsfile$df_trans,
                               condition.col = input$design_column,
                               first.level = input$feature_A, 
                               ref.level = input$feature_B, 
