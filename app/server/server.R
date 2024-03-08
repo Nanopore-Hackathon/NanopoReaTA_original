@@ -15,7 +15,12 @@ server <- function(input, output, session) {
   cores = 16
   myProcess <- NULL
   
-  
+  ## only relevant for epi2me integration ##
+  ## if SHINYDATA is not set, do nothing  ##
+  ## epi2me currently requires bind-mount of nextflow output at /data
+  ## read SHINYDATA env var and call setwd here to make sure we run in the right directory
+  setwd(Sys.getenv("SHINYDATA", "."))
+
   ### 0.2 Cores for DEA ####
   # Set number of cores of default cores used for R process (from input in DEA tab)
   observe({register(MulticoreParam(max(c(4,round(cores * 0.6)))))})
