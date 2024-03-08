@@ -781,7 +781,7 @@ server <- function(input, output, session) {
   },server = FALSE)
 
    genes.list_gC <- reactive({
-    gtf_genes = unique(gtf_df)
+    gtf_genes = unique(gtf_df[, c("gene_id", "gene_name")])
     print(input$table_of_genes_df_gC_rows_selected)
     gtf_genes[input$table_of_genes_df_gC_rows_selected, ]
   })
