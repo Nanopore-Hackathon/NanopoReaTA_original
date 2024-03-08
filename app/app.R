@@ -46,6 +46,14 @@ source("ui/ui.R", local = TRUE)
 # BACKEND
 source("server/server.R", local = TRUE)
 
+
+metadata_path = "metadata.tsv"
+bed_file = "hg38_GENCODE_V42_Basic.bed"
+gtf_path = "converted_gtf.csv"
+while (!file.exists(metadata_path) | !file.exists(gtf_path)){
+  print("Files not present....Please wait!")
+}
+
 # ______________________________________________________________________________
 # LAUNCH APP
 shinyApp(ui, server, options=list(port=as.integer(Sys.getenv("PORT"))))
